@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: docker/prod/Dockerfile
+    restart: always
+    env_file:
+      - docker/prod/envs/.env.app
+
+  db:
+    image: postgres:15.2-alpine
+    restart: always
+    env_file:
+      - docker/prod/envs/.env.db
+    ports:
+      - '5432:5432'
