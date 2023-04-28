@@ -8,6 +8,8 @@ services:
     restart: always
     env_file:
       - envs/.env.app.dev
+    volumes:
+      - '../../alembic/versions:/app/alembic/versions'
 
   db:
     image: postgres:15.2-alpine

@@ -14,5 +14,3 @@ class PortfolioLog(AbstractORMBaseModel):
     action_type = Column(SmallInteger(), nullable=False)
     by_price = Column(Float(), nullable=False)
     value = Column(Float(), nullable=False)
-
-    portfolio = relationship('Portfolio', back_populates='portfolio_log')
