@@ -7,15 +7,13 @@ services:
       dockerfile: docker/dev/Dockerfile-dev
     restart: always
     env_file:
-      - envs/.env.app.example
-      - envs/.env.app
+      - envs/.env.app.dev
 
   db:
     image: postgres:15.2-alpine
     restart: always
     env_file:
-      - envs/.env.db.example
-      - envs/.env.db
+      - envs/.env.db.dev
     ports:
       - '5432:5432'
     volumes:
