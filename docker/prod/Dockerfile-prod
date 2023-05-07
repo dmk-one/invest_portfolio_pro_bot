@@ -10,8 +10,10 @@ RUN apt-get -y update && apt-get -y upgrade
 RUN apt-get install nano
 RUN pip install --upgrade pip
 
-COPY . .
+COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-CMD ["python", "-u", "main.py"]
+COPY . .
+
+CMD ["python", "-u", "main_bot.py"]
