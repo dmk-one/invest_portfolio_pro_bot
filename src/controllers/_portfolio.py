@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from .portfolio_log import PortfolioLogService
+from ._portfolio_log import PortfolioLogService
 from ..database.provider.portfolio import PortfolioProvider
 
 from ..database.serializer import domain

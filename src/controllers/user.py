@@ -1,111 +1,60 @@
 from datetime import datetime
-from aiogram import types
 
-from .portfolio import PortfolioService
+from sqlalchemy.sql.expression import select, update
+
+from src.models import User
+from .base import BaseController
 
 
-class User:
+class UserController(BaseController):
+    async def get(
+        self,
+        tg_id: int
+    ) -> User:
+        stmt = select(User).where(User.tg_id == tg_id)
+
+        return (await self.async_session.execute(stmt)).scalar()
+
     async def create(
         self,
         tg_id: int,
         username: str,
         first_name: str,
-        last_name: str,
-        is_bot: bool,
         language_code: str,
-        added_to_attachment_menu: bool,
-        can_join_groups: bool,
-        can_read_all_group_messages: bool,
-        supports_inline_queries: bool,
-        is_superuser: bool,
-        last_activity: datetime,
-        registration_date: datetime,
-        phone_number: int = ...
-    ) -> domain.User:
-
-        user = await self._provider.insert(
+        last_name: str = None,
+        added_to_attachment_menu: bool = False,
+        can_join_groups: bool = False,
+        can_read_all_group_messages: bool = False,
+        supports_inline_queries: bool = False,
+        is_superuser: bool = False,
+        phone_number: int = None
+    ) -> User:
+        new_user = User(
             tg_id=tg_id,
             username=username,
             first_name=first_name,
             last_name=last_name,
-            is_bot=is_bot,
             language_code=language_code,
             added_to_attachment_menu=added_to_attachment_menu,
             can_join_groups=can_join_groups,
             can_read_all_group_messages=can_read_all_group_messages,
             supports_inline_queries=supports_inline_queries,
             is_superuser=is_superuser,
-            last_activity=last_activity,
-            registration_date=registration_date,
-            phone_number=phone_number
+            phone_number=phone_number,
+            last_activity=datetime.now()
         )
 
-        return user
+        self.async_session.add(new_user)
 
-    async def get(
-        self,
-        tg_id: int = ...,
-        phone_number: int = ...
-    ) -> domain.User:
+        return await self.get(tg_id)
 
-        return await self._provider.get(
-            filters={
-                'tg_id': tg_id,
-                'phone_number': phone_number
-            }
-        )
-
-    async def add_user_phone(
+    async def update(
         self,
         tg_id: int,
-        phone_number: int
-    ):
-        await self._provider.update(
-            phone_number=phone_number,
-            filters={
-                'tg_id': tg_id
-            }
-        )
+        **kwargs
+    ) -> User:
+        stmt = update(User).where(User.tg_id == tg_id).values(**kwargs)
 
-    async def update_last_activity(
-        self,
-        tg_id: int
-    ) -> domain.User:
-        updated_user = await self._provider.update(
-            last_activity=datetime.now(),
-            filters={
-                'tg_id': tg_id
-            }
-        )
-        return updated_user
+        await self.async_session.execute(stmt)
 
-    async def update_last_activity_or_create(
-        self,
-        mess: types.Message
-    ):
-        try:
-            updated_user = await self.update_last_activity(
-                tg_id=mess.from_user.id
-            )
-            updated_user.is_new_user = False
-
-            return updated_user
-        except:
-            new_user = await self.create(
-                tg_id=mess.from_user.id,
-                username=mess.from_user.username,
-                first_name=mess.from_user.first_name,
-                last_name=mess.from_user.last_name,
-                is_bot=mess.from_user.is_bot,
-                language_code=mess.from_user.language_code,
-                added_to_attachment_menu=mess.from_user.added_to_attachment_menu,
-                can_join_groups=mess.from_user.can_join_groups,
-                can_read_all_group_messages=mess.from_user.can_read_all_group_messages,
-                supports_inline_queries=mess.from_user.supports_inline_queries,
-                is_superuser=False,
-                last_activity=datetime.now(),
-                registration_date=datetime.now()
-            )
-            new_user.is_new_user = True
-
-            return new_user
+        return await self.get(tg_id)
