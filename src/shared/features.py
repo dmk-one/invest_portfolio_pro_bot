@@ -1,5 +1,6 @@
 from functools import wraps
 
+from src.exceptions.shared import RoleException
 from src.models import User
 
 
@@ -12,7 +13,7 @@ def set_role_validator(allowed_role_list: list):
             if '*' in allowed_role_list or user.role in allowed_role_list:
                 return func(*args, **kwargs)
 
-            raise Exception()
+            raise RoleException()
 
         return wrapper
 

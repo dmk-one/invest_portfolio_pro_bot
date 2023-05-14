@@ -5,8 +5,8 @@ from src.shared.features import set_role_validator
 from src.shared.constants import ROLE
 
 
-class OtherHandler(BaseHandler):
-    @set_role_validator(allowed_role_list=[ROLE.CUSTOMER.value, ROLE.ADMIN.value])
+class ExtraHandler(BaseHandler):
+    @set_role_validator(allowed_role_list=[ROLE.CUSTOMER.value, ROLE.MODERATOR.value])
     async def helper(self, message: types.Message, *args, **kwargs):
         await message.reply(text='/111 - test \n /222 - test')
 
