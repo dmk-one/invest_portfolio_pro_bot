@@ -1,9 +1,10 @@
 from datetime import datetime
 
-from sqlalchemy import Column, BigInteger, String, Boolean, DateTime
+from sqlalchemy import Column, BigInteger, String, Boolean, DateTime, SmallInteger
 from sqlalchemy.sql import func
 
 from .base import AbstractORMBaseModel
+from src.shared.constants import ROLE
 
 
 class User(AbstractORMBaseModel):
@@ -11,8 +12,9 @@ class User(AbstractORMBaseModel):
 
     tg_id = Column(BigInteger(), unique=True, nullable=False)
     username = Column(String(255), nullable=False, unique=True, index=True)
-    first_name = Column(String(255), nullable=False, unique=True)
-    last_name = Column(String(255), nullable=True, unique=True)
+    role = Column(SmallInteger(), nullable=False, default=ROLE.CUSTOMER.value)
+    first_name = Column(String(255), nullable=False, unique=False)
+    last_name = Column(String(255), nullable=True, unique=False)
     phone_number = Column(BigInteger(), nullable=True)
     language_code = Column(String(255), nullable=False)
     added_to_attachment_menu = Column(Boolean, nullable=True, default=False)

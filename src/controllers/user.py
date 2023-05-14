@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.sql.expression import select, update
 
+from src.shared.constants import ROLE
 from src.models import User
 from .base import BaseController
 
@@ -21,6 +22,7 @@ class UserController(BaseController):
         username: str,
         first_name: str,
         language_code: str,
+        role: int = ROLE.CUSTOMER.value,
         last_name: str = None,
         added_to_attachment_menu: bool = False,
         can_join_groups: bool = False,
@@ -32,6 +34,7 @@ class UserController(BaseController):
         new_user = User(
             tg_id=tg_id,
             username=username,
+            role=role,
             first_name=first_name,
             last_name=last_name,
             language_code=language_code,

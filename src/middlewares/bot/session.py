@@ -54,7 +54,8 @@ class ResourceMiddleware(BaseMiddleware):
         async_session = AsyncSession(async_engine)
         BaseController.async_session = async_session
 
-        await self._update_last_activity_or_create(from_user_data=message.from_user)
+        user = await self._update_last_activity_or_create(from_user_data=message.from_user)
+        data['user'] = user
 
         # data['async_session'] = async_session
         return data
