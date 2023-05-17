@@ -18,4 +18,3 @@ def set_role_validator(allowed_role_list: list):
         return wrapper
 
     return decorator
-

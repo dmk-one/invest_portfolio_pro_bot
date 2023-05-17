@@ -1,1 +1,1 @@
-from .session import ResourceMiddleware
+from .resource import ResourceMiddleware

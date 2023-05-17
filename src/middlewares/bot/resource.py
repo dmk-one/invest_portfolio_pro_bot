@@ -33,13 +33,14 @@ class ResourceMiddleware(BaseMiddleware):
                 added_to_attachment_menu=from_user_data.added_to_attachment_menu,
                 can_join_groups=from_user_data.can_join_groups,
                 can_read_all_group_messages=from_user_data.can_read_all_group_messages,
-                supports_inline_queries=from_user_data.supports_inline_queries
+                supports_inline_queries=from_user_data.supports_inline_queries,
+                last_activity=datetime.now()
             )
 
             return new_user
 
         updated_user = await user_controller.update(
-            tg_id=from_user_data.id,
+            where={'tg_id': from_user_data.id},
             last_activity=datetime.now()
         )
 
