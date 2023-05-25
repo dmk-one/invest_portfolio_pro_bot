@@ -21,7 +21,7 @@ class ResourceMiddleware(BaseMiddleware):
 
     async def _update_last_activity_or_create(self, from_user_data: types.User):
         user_controller = UserController()
-        user = await user_controller.get(tg_id=from_user_data.id)
+        user = await user_controller.get_first(tg_id=from_user_data.id)
 
         if user is None:
             new_user = await user_controller.create(
