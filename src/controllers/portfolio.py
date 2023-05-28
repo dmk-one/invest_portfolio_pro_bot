@@ -1,19 +1,15 @@
-from typing import List, Optional
+from typing import List
 
-from sqlalchemy.orm import join
-from sqlalchemy.sql.expression import select, update, delete
+from sqlalchemy.sql.expression import select
 
 from src.models import Portfolio, PortfolioLog
-from src.shared.constants import DetailedPortfolio, TotalStats
+from src.shared.pydantic_models import DetailedPortfolio, TotalStats
 from src.shared.features import get_current_price
 from .base import BaseController
-from .portfolio_log import PortfolioLogController
 
 
 class PortfolioController(BaseController):
     model = Portfolio
-
-    # _portfolio_log_controller = PortfolioLogController()
 
     async def make_get_stmt(
         self,
@@ -56,7 +52,8 @@ class PortfolioController(BaseController):
         pnl_percent = (pnl_value * 100) / total_invested_usd_sum
 
         detailed_portfolio = DetailedPortfolio(
-            portfolio=portfolio,
+            tg_id=portfolio.tg_id,
+            crypto=portfolio.crypto,
             total_value=total_value,
             average_price=average_price,
             current_price=current_price,

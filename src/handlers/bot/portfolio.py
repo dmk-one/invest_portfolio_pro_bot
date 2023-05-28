@@ -2,19 +2,15 @@ from aiogram import Dispatcher, types
 
 from .base import BaseHandler
 from src.shared.features import set_role_validator
-from src.shared.constants import ROLE
 
 
-class ExtraHandler(BaseHandler):
+class PortfolioHandler(BaseHandler):
     starter_text = """
     Добро пожаловать в простой бот для отслеживания крипто портфеля
     """
 
-    helper_text = '/start, /restart - Запустить/перезагрузить бот \n' \
-                  '/help - Все доступные команды'
-
     @set_role_validator(allowed_role_list=['*'])
-    async def helper(self, message: types.Message, *args, **kwargs):
+    async def get_current_price(self, message: types.Message, *args, **kwargs):
         await message.reply(text=self.helper_text)
 
     @set_role_validator(allowed_role_list=['*'])
