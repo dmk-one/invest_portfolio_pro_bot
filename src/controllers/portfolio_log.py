@@ -1,6 +1,6 @@
-from src.models import PortfolioLog
+from src.models import PortfolioActions
 from .base import BaseController
 
 
-class PortfolioLogController(BaseController):
-    model = PortfolioLog
+class PortfolioActionsController(BaseController):
+    model = PortfolioActions

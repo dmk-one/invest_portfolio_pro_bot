@@ -2,7 +2,7 @@ from typing import List
 
 from sqlalchemy.sql.expression import select
 
-from src.models import Portfolio, PortfolioLog
+from src.models import Portfolio, PortfolioActions
 from src.shared.pydantic_models import DetailedPortfolio, TotalStats
 from src.shared.features import get_current_price
 from .base import BaseController
@@ -19,9 +19,9 @@ class PortfolioController(BaseController):
 
         stmt = select(
             self.model,
-            PortfolioLog
+            PortfolioActions
         ).outerjoin(
-            PortfolioLog, PortfolioLog.portfolio_id == self.model.id
+            PortfolioActions, PortfolioActions.portfolio_id == self.model.id
         ).where(*where_clause_list)
 
         return stmt
@@ -29,7 +29,7 @@ class PortfolioController(BaseController):
     async def _detailed_portfolio_generator(
         self,
         portfolio: Portfolio,
-        portfolio_log_list: List[PortfolioLog],
+        portfolio_log_list: List[PortfolioActions],
     ) -> DetailedPortfolio:
         current_price = get_current_price()
 

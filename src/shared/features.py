@@ -1,8 +1,7 @@
 import aiohttp
 
 from functools import wraps
-
-from settings import CoinAPI_KEY
+from bs4 import BeautifulSoup
 from src.exceptions.shared import RoleException
 from src.models import User
 
@@ -28,16 +27,13 @@ async def get_current_price(
     quote: str = 'USDT',
     exchange: str = 'BINANCE'
 ):
-    url = f'https://rest.coinapi.io/v1/symbols?' \
-          f'filter_exchange_id={exchange}&' \
-          f'filter_asset_id={crypto_abbreviation}'
-    headers = {'X-CoinAPI-Key': CoinAPI_KEY}
+    url = 'https://coinmarketcap.com/'
 
     async with aiohttp.ClientSession() as session:
-        async with session.get(
-                url=url,
-                headers=headers
-        ) as response:
-            for res in await response.json():
-                if res['asset_id_quote'] == quote:
-                    return res['price']
+        async with session.get(url=url) as response:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            data = soup.find('a', {'href': '/currencies/bitcoin/#markets'}).text
+
+            data = data.replace(',', '')
+            price = data.replace('$', '')
+
