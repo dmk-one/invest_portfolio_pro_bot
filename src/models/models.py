@@ -52,8 +52,8 @@ class Portfolio(AbstractORMBaseModel):
     crypto = Column(BigInteger, ForeignKey(f'{Cryptos.__tablename__}.id', ondelete='CASCADE'))
 
 
-class PortfolioActions(AbstractORMBaseModel):
-    __tablename__ = 'portfolio_actions'
+class PortfolioAction(AbstractORMBaseModel):
+    __tablename__ = 'portfolio_action'
 
     portfolio_id = Column(BigInteger, ForeignKey(f'{Portfolio.__tablename__}.id', ondelete='CASCADE'))
     action_date = Column(DateTime(), server_default=func.now(), nullable=False)

@@ -2,15 +2,13 @@ from typing import List
 
 from sqlalchemy.sql.expression import select
 
-from src.models import Portfolio, PortfolioActions
+from src.models import Portfolio, PortfolioAction
 from src.shared.pydantic_models import DetailedPortfolio, TotalStats
 from src.shared.features import get_current_price
 from .base import BaseController
 
 
 class PortfolioController(BaseController):
-    model = Portfolio
-
     async def make_get_stmt(
         self,
         **where
@@ -18,10 +16,10 @@ class PortfolioController(BaseController):
         where_clause_list = await self._make_where_clause(**where)
 
         stmt = select(
-            self.model,
-            PortfolioActions
+            Portfolio,
+            PortfolioAction
         ).outerjoin(
-            PortfolioActions, PortfolioActions.portfolio_id == self.model.id
+            PortfolioAction, PortfolioAction.portfolio_id == Portfolio.id
         ).where(*where_clause_list)
 
         return stmt
@@ -29,20 +27,20 @@ class PortfolioController(BaseController):
     async def _detailed_portfolio_generator(
         self,
         portfolio: Portfolio,
-        portfolio_log_list: List[PortfolioActions],
+        portfolio_action_list: List[PortfolioAction],
     ) -> DetailedPortfolio:
-        current_price = get_current_price()
+        current_price = await get_current_price()
 
         total_value: float = 0
         total_invested_usd_sum: float = 0
 
-        for portfolio_log in portfolio_log_list:
-            if portfolio_log.action_type.value == 0:
-                total_value += portfolio_log.value
-                total_invested_usd_sum += portfolio_log.value * portfolio_log.by_price
+        for portfolio_action in portfolio_action_list:
+            if portfolio_action.action_type.value == 0:
+                total_value += portfolio_action.value
+                total_invested_usd_sum += portfolio_action.value * portfolio_action.by_price
             else:
-                total_value -= portfolio_log.value
-                total_invested_usd_sum -= portfolio_log.value * portfolio_log.by_price
+                total_value -= portfolio_action.value
+                total_invested_usd_sum -= portfolio_action.value * portfolio_action.by_price
 
         average_price = total_invested_usd_sum / total_value
 
@@ -79,11 +77,11 @@ class PortfolioController(BaseController):
         detailed_portfolio_list = []
 
         for portfolio_record in portfolio_records:
-            portfolio, portfolio_log_list = portfolio_record[0], portfolio_record[1:]
+            portfolio, portfolio_action_list = portfolio_record[0], portfolio_record[1:]
 
             detailed_portfolio = await self._detailed_portfolio_generator(
                 portfolio=portfolio,
-                portfolio_log_list=portfolio_log_list
+                portfolio_action_list=portfolio_action_list
             )
 
             detailed_portfolio_list.append(detailed_portfolio)

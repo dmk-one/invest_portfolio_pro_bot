@@ -2,9 +2,9 @@ from datetime import datetime
 
 from aiogram.dispatcher.middlewares import BaseMiddleware
 from aiogram import types
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from settings import settings
 
-from src.sessions import async_engine
 from src.controllers import BaseController, UserController
 
 
@@ -13,11 +13,12 @@ class ResourceMiddleware(BaseMiddleware):
     Middleware for providing db-connection resource
     """
 
-    # async def _cleanup(self, data: dict):
-    #     if "async_session" in data:
-    #         session: AsyncSession = data["async_session"]
-    #         await session.commit()
-    #         await session.close()
+    async_engine = create_async_engine(
+        settings.ASYNC_SQLALCHEMY_URL,
+        echo=settings.SQLALCHEMY_ECHO,
+        pool_size=settings.SQLALCHEMY_POOL_SIZE,
+        max_overflow=settings.SQLALCHEMY_MAX_OVERFLOW
+    )
 
     async def _update_last_activity_or_create(self, from_user_data: types.User):
         user_controller = UserController()
@@ -52,7 +53,7 @@ class ResourceMiddleware(BaseMiddleware):
         await session.close()
 
     async def on_pre_process_message(self, message: types.Message, data: dict):
-        async_session = AsyncSession(async_engine)
+        async_session = AsyncSession(self.async_engine)
         BaseController.async_session = async_session
 
         user = await self._update_last_activity_or_create(from_user_data=message.from_user)
