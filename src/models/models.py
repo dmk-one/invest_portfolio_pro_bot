@@ -38,18 +38,11 @@ class User(AbstractORMBaseModel):
     created_at = Column(DateTime(), server_default=func.now(), nullable=False)
 
 
-class Cryptos(AbstractORMBaseModel):
-    __tablename__ = 'cryptos'
-
-    name = Column(String(), nullable=False)
-    ticker = Column(String(), nullable=False)
-
-
 class Portfolio(AbstractORMBaseModel):
     __tablename__ = 'portfolio'
 
     tg_id = Column(BigInteger, ForeignKey(f'{User.__tablename__}.tg_id', ondelete='CASCADE'))
-    crypto = Column(BigInteger, ForeignKey(f'{Cryptos.__tablename__}.id', ondelete='CASCADE'))
+    crypto_ticker = Column(String(), nullable=False)
 
 
 class PortfolioAction(AbstractORMBaseModel):
