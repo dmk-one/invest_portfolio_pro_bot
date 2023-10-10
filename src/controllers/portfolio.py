@@ -1,29 +1,17 @@
-from typing import List
+import datetime
+from typing import List, Any, Sequence
 
+from sqlalchemy import Row, RowMapping
 from sqlalchemy.sql.expression import select
 
 from src.models import Portfolio, PortfolioAction
-from src.shared.pydantic_models import DetailedPortfolio, TotalStats
+from src.shared.schemas import DetailedPortfolio, TotalStats
 from src.shared.features import get_current_price
 from .base import BaseController
+from ..shared.constants import ActionType
 
 
 class PortfolioController(BaseController):
-    async def make_get_stmt(
-        self,
-        **where
-    ):
-        where_clause_list = await self._make_where_clause(**where)
-
-        stmt = select(
-            Portfolio,
-            PortfolioAction
-        ).outerjoin(
-            PortfolioAction, PortfolioAction.portfolio_id == Portfolio.id
-        ).where(*where_clause_list)
-
-        return stmt
-
     async def _detailed_portfolio_generator(
         self,
         portfolio: Portfolio,
@@ -63,30 +51,67 @@ class PortfolioController(BaseController):
 
         return detailed_portfolio
 
-    async def get_detailed_portfolio(
+    async def get_user_portfolio_tickers(
         self,
-        portfolio_id_list: List[int] = None
-    ) -> List[DetailedPortfolio]:
-        if portfolio_id_list is None:
-            portfolio_records = await self.get_all()
-        else:
-            portfolio_records = await self.get_all(
-                id__in=portfolio_id_list
-            )
+        tg_id: int
+    ) -> Sequence[List[str]]:
+        stmt = select(Portfolio.crypto_ticker).where(Portfolio.tg_id == tg_id)
 
-        detailed_portfolio_list = []
+        return (await self.async_session.scalars(stmt)).all()
 
-        for portfolio_record in portfolio_records:
-            portfolio, portfolio_action_list = portfolio_record[0], portfolio_record[1:]
+    async def create_portfolio_record(
+        self,
+        tg_id: int,
+        crypto_ticker: str,
+        action_date: datetime,
+        action_type: ActionType,
+        by_price: float,
+        value: float
+    ) -> PortfolioAction:
+        new_portfolio = Portfolio(
+            tg_id=tg_id,
+            crypto_ticker=crypto_ticker
+        )
 
-            detailed_portfolio = await self._detailed_portfolio_generator(
-                portfolio=portfolio,
-                portfolio_action_list=portfolio_action_list
-            )
+        new_portfolio_action = PortfolioAction(
+            portfolio_id=new_portfolio.id,
+            action_date=action_date,
+            action_type=action_type,
+            by_price=by_price,
+            value=value
+        )
 
-            detailed_portfolio_list.append(detailed_portfolio)
+        self.async_session.add_all([new_portfolio, new_portfolio_action])
 
-        return detailed_portfolio_list
+        await self.async_session.commit()
+
+        return new_portfolio_action
+
+
+    # async def get_user_portfolio_tickers(
+    #     self,
+    #     portfolio_id_list: List[int] = None
+    # ) -> List[DetailedPortfolio]:
+    #     if portfolio_id_list is None:
+    #         portfolio_records = await self.get_all()
+    #     else:
+    #         portfolio_records = await self.get_all(
+    #             id__in=portfolio_id_list
+    #         )
+    #
+    #     detailed_portfolio_list = []
+    #
+    #     for portfolio_record in portfolio_records:
+    #         portfolio, portfolio_action_list = portfolio_record[0], portfolio_record[1:]
+    #
+    #         detailed_portfolio = await self._detailed_portfolio_generator(
+    #             portfolio=portfolio,
+    #             portfolio_action_list=portfolio_action_list
+    #         )
+    #
+    #         detailed_portfolio_list.append(detailed_portfolio)
+    #
+    #     return detailed_portfolio_list
 
     async def get_total_stats(
         self,

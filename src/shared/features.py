@@ -50,7 +50,7 @@ async def _get_price_data(
                 return float(price)
 
 
-async def get_current_price(crypto_ticker: str):
+async def get_current_price(crypto_ticker: str) -> float:
     async with aiohttp.ClientSession() as session:
         results = await asyncio.gather(
             *[_get_price_data(session, crypto_ticker, page) for page in range(1, 31)]

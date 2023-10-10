@@ -22,10 +22,10 @@ class ResourceMiddleware(BaseMiddleware):
 
     async def _update_last_activity_or_create(self, from_user_data: types.User):
         user_controller = UserController()
-        user = await user_controller.get_first(tg_id=from_user_data.id)
+        user = await user_controller.get_user(tg_id=from_user_data.id)
 
         if user is None:
-            new_user = await user_controller.create(
+            new_user = await user_controller.create_user(
                 tg_id=from_user_data.id,
                 username=from_user_data.username,
                 first_name=from_user_data.first_name,
@@ -34,14 +34,13 @@ class ResourceMiddleware(BaseMiddleware):
                 added_to_attachment_menu=from_user_data.added_to_attachment_menu,
                 can_join_groups=from_user_data.can_join_groups,
                 can_read_all_group_messages=from_user_data.can_read_all_group_messages,
-                supports_inline_queries=from_user_data.supports_inline_queries,
-                last_activity=datetime.now()
+                supports_inline_queries=from_user_data.supports_inline_queries
             )
 
             return new_user
 
-        updated_user = await user_controller.update(
-            where={'tg_id': from_user_data.id},
+        updated_user = await user_controller.update_user(
+            tg_id=from_user_data.id,
             last_activity=datetime.now()
         )
 
