@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 
@@ -25,12 +27,24 @@ class PortfolioHandler(BaseHandler):
         Введенный крипто тикер не найден, либо вы ввели не правильный тикер, либо мы не отслеживаем этот актив
     """
 
+    wrong_date_text = """
+        Введенная дата некорректна! Создание операции отменена
+    """
+
     wrong_data_text = """
         Некорректные данные, создание операции отменена
     """
 
+    wrong_price_or_value_text = """
+        Некорректное значение, значение должно быть целым числом либо числом с пл.запятой
+    """
+
     enter_operation_date_text = """
         Введите дату операции в формате - день/месяц/год
+    """
+
+    enter_price_text = """
+        Введите цену актива в момент покупки (целое число либо с пл.запятой):
     """
 
     @set_role_validator(allowed_role_list=['*'])
@@ -80,7 +94,31 @@ class PortfolioHandler(BaseHandler):
                 await message.reply(text=self.wrong_data_text)
 
     async def create_portfolio_record__on_action_date_state(self, message: types.Message, state: FSMContext) -> None:
-        return
+        try:
+            action_date = datetime.strptime(message.text, "%d/%m/%Y").date()
+        except:
+            await state.finish()
+            await message.reply(text=self.wrong_date_text)
+            return
+
+        async with state.proxy() as data:
+            data['action_date'] = action_date
+            await message.reply(self.enter_price_text, reply_markup=get_cancel_kb())
+            await PortfolioRecordCreationStatesGroup.by_price.set()
+
+    async def create_portfolio_record__on_by_price_state(self, message: types.Message, state: FSMContext) -> None:
+        async with state.proxy() as data:
+            try:
+                by_price: float = float(message.text)
+            except:
+                await state.finish()
+                await message.reply(text=self.wrong_price_or_value_text)
+                return
+
+            data['by_price'] = by_price
+
+            await message.reply("Введите количество (целое число либо с пл.запятой)):", reply_markup=get_cancel_kb())
+            await PortfolioRecordCreationStatesGroup.value.set()
 
     async def create_portfolio_record__on_action_type_state(self, message: types.Message, state: FSMContext) -> None:
         async with state.proxy() as data:
@@ -95,17 +133,22 @@ class PortfolioHandler(BaseHandler):
                 await message.reply(text=self.wrong_data_text)
                 return
 
-        await message.reply("Введите количество (Целое число либо с пл.запятой):", reply_markup=get_cancel_kb())
+        await message.reply("Введите количество (целое число либо с пл.запятой)):", reply_markup=get_cancel_kb())
         await PortfolioRecordCreationStatesGroup.value.set()
 
     async def create_portfolio_record__on_value_state(self, message: types.Message, state: FSMContext) -> None:
         async with state.proxy() as data:
-            value: float = float(message.text)
+            try:
+                value: float = float(message.text)
+            except:
+                await state.finish()
+                await message.reply(text=self.wrong_price_or_value_text)
+                return
 
             await self.portfolio_controller.create_portfolio_record(
                 tg_id=message['from']['id'],
                 crypto_ticker=data['crypto_ticker'],
-                action_date=data['action_date'],
+                action_date=data['action_date'] if 'action_date' in data else None,
                 action_type=data['action_type'],
                 by_price=data['by_price'],
                 value=value
@@ -114,10 +157,32 @@ class PortfolioHandler(BaseHandler):
             await state.finish()
             await message.reply(text="Операция добавлена, данные портфеля обновлены!")
 
-
-
-
     def register_handlers(self, dispatcher: Dispatcher):
         dispatcher.register_message_handler(self.get_current_price, commands=['get_price'])
         dispatcher.register_message_handler(self.get_my_tickers, commands=['my_tickers'])
         dispatcher.register_message_handler(self.create_portfolio_record__start_state, commands=['create_record'])
+        dispatcher.register_message_handler(
+            self.create_portfolio_record__on_crypto_ticker_state,
+            state=PortfolioRecordCreationStatesGroup.crypto_ticker
+        )
+        dispatcher.register_message_handler(
+            self.create_portfolio_record__on_is_current_data_state,
+            state=PortfolioRecordCreationStatesGroup.is_current_data_will_be_used
+        )
+        dispatcher.register_message_handler(
+            self.create_portfolio_record__on_action_date_state,
+            state=PortfolioRecordCreationStatesGroup.action_date
+        )
+        dispatcher.register_message_handler(
+            self.create_portfolio_record__on_by_price_state,
+            state=PortfolioRecordCreationStatesGroup.by_price
+        )
+        dispatcher.register_message_handler(
+            self.create_portfolio_record__on_action_type_state,
+            state=PortfolioRecordCreationStatesGroup.action_type
+        )
+        dispatcher.register_message_handler(
+            self.create_portfolio_record__on_value_state,
+            state=PortfolioRecordCreationStatesGroup.value
+        )
+

@@ -1,8 +1,8 @@
-"""base migration
+"""Base models
 
-Revision ID: c6ecd4c38529
+Revision ID: 3ae27a36faa8
 Revises: 
-Create Date: 2023-10-08 23:34:13.494152
+Create Date: 2023-10-11 12:51:24.956676
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = 'c6ecd4c38529'
+revision = '3ae27a36faa8'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -54,7 +54,7 @@ def upgrade() -> None:
     )
     op.create_table('portfolio_action',
     sa.Column('portfolio_id', sa.BigInteger(), nullable=True),
-    sa.Column('action_date', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('action_date', sa.Date(), nullable=False),
     sa.Column('action_type', postgresql.ENUM('BUY', 'SELL', name='actiontype'), nullable=False),
     sa.Column('by_price', sa.Float(), nullable=False),
     sa.Column('value', sa.Float(), nullable=False),

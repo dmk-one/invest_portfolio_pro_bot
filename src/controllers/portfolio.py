@@ -1,5 +1,5 @@
 import datetime
-from typing import List, Any, Sequence
+from typing import List, Any, Sequence, Optional
 
 from sqlalchemy import Row, RowMapping
 from sqlalchemy.sql.expression import select
@@ -63,11 +63,15 @@ class PortfolioController(BaseController):
         self,
         tg_id: int,
         crypto_ticker: str,
-        action_date: datetime,
+        action_date: Optional[datetime],
         action_type: ActionType,
         by_price: float,
         value: float
     ) -> PortfolioAction:
+
+        if not action_date:
+            action_date = datetime.datetime.now()
+
         new_portfolio = Portfolio(
             tg_id=tg_id,
             crypto_ticker=crypto_ticker

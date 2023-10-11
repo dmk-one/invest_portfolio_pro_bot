@@ -1,8 +1,7 @@
-import enum
 from uuid import uuid4
 from datetime import datetime
 
-from sqlalchemy import Column, BigInteger, String, Boolean, DateTime, SmallInteger, UUID, ForeignKey, Float
+from sqlalchemy import Column, BigInteger, String, Boolean, DateTime, SmallInteger, UUID, ForeignKey, Float, Date
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.sql import func
 from sqlalchemy.orm import declarative_base
@@ -50,7 +49,7 @@ class PortfolioAction(AbstractORMBaseModel):
     __tablename__ = 'portfolio_action'
 
     portfolio_id = Column(BigInteger, ForeignKey(f'{Portfolio.__tablename__}.id', ondelete='CASCADE'))
-    action_date = Column(DateTime(), server_default=func.now(), nullable=False)
+    action_date = Column(Date, nullable=False, default=datetime.now())
     action_type = Column(ENUM(ActionType), nullable=False)
     by_price = Column(Float(), nullable=False)
     value = Column(Float(), nullable=False)
