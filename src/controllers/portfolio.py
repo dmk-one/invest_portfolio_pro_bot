@@ -63,7 +63,7 @@ class PortfolioController(BaseController):
         self,
         tg_id: int,
         crypto_ticker: str,
-        action_date: Optional[datetime],
+        action_date: Optional[datetime.datetime],
         action_type: ActionType,
         by_price: float,
         value: float

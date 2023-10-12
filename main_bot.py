@@ -7,7 +7,7 @@ from src.handlers.base import MetaHandler
 
 storage = MemoryStorage()
 bot = Bot(BOT_TOKEN_API)
-dp = Dispatcher(bot, storage)
+dp = Dispatcher(bot, storage=storage)
 
 
 async def on_startup(_):

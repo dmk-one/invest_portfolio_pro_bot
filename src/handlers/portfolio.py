@@ -19,8 +19,7 @@ class PortfolioHandler(BaseHandler):
     """
 
     is_current_data_state_text = """
-        Будем использовать текущую цену актива? (Да/Нет)
-        Если нет то вы дальше сами укажите дату и цену покупки/продажи актива
+        Будем использовать текущую цену актива? (Да/Нет)\nЕсли нет то вы дальше сами укажите дату и цену покупки/продажи актива
     """
 
     wrong_ticker_text = """
@@ -60,18 +59,35 @@ class PortfolioHandler(BaseHandler):
 
 
     @set_role_validator(allowed_role_list=['*'])
-    async def create_portfolio_record__start_state(self, message: types.Message) -> None:
+    async def create_portfolio_record__start_state(
+        self, message:
+        types.Message,
+        *args,
+        **kwargs
+    ) -> None:
         await message.reply(self.start_state_text, reply_markup=get_cancel_kb())
         await PortfolioRecordCreationStatesGroup.crypto_ticker.set()
 
-    async def create_portfolio_record__on_crypto_ticker_state(self, message: types.Message, state: FSMContext) -> None:
+    async def create_portfolio_record__on_crypto_ticker_state(
+        self,
+        message: types.Message,
+        state: FSMContext,
+        *args,
+        **kwargs
+    ) -> None:
         async with state.proxy() as data:
             data['crypto_ticker'] = message.text
 
         await message.reply(self.is_current_data_state_text, reply_markup=get_is_current_data_kb())
         await PortfolioRecordCreationStatesGroup.is_current_data_will_be_used.set()
 
-    async def create_portfolio_record__on_is_current_data_state(self, message: types.Message, state: FSMContext) -> None:
+    async def create_portfolio_record__on_is_current_data_state(
+        self,
+        message: types.Message,
+        state: FSMContext,
+        *args,
+        **kwargs
+    ) -> None:
         async with state.proxy() as data:
             current_price = await get_current_price(data['crypto_ticker'])
 
@@ -93,7 +109,13 @@ class PortfolioHandler(BaseHandler):
                 await state.finish()
                 await message.reply(text=self.wrong_data_text)
 
-    async def create_portfolio_record__on_action_date_state(self, message: types.Message, state: FSMContext) -> None:
+    async def create_portfolio_record__on_action_date_state(
+        self,
+        message: types.Message,
+        state: FSMContext,
+        *args,
+        **kwargs
+    ) -> None:
         try:
             action_date = datetime.strptime(message.text, "%d/%m/%Y").date()
         except:
@@ -106,7 +128,13 @@ class PortfolioHandler(BaseHandler):
             await message.reply(self.enter_price_text, reply_markup=get_cancel_kb())
             await PortfolioRecordCreationStatesGroup.by_price.set()
 
-    async def create_portfolio_record__on_by_price_state(self, message: types.Message, state: FSMContext) -> None:
+    async def create_portfolio_record__on_by_price_state(
+        self,
+        message: types.Message,
+        state: FSMContext,
+        *args,
+        **kwargs
+    ) -> None:
         async with state.proxy() as data:
             try:
                 by_price: float = float(message.text)
@@ -120,7 +148,13 @@ class PortfolioHandler(BaseHandler):
             await message.reply("Введите количество (целое число либо с пл.запятой)):", reply_markup=get_cancel_kb())
             await PortfolioRecordCreationStatesGroup.value.set()
 
-    async def create_portfolio_record__on_action_type_state(self, message: types.Message, state: FSMContext) -> None:
+    async def create_portfolio_record__on_action_type_state(
+        self,
+        message: types.Message,
+        state: FSMContext,
+        *args,
+        **kwargs
+    ) -> None:
         async with state.proxy() as data:
             action_type: str = message.text.lower()
 
@@ -136,7 +170,13 @@ class PortfolioHandler(BaseHandler):
         await message.reply("Введите количество (целое число либо с пл.запятой)):", reply_markup=get_cancel_kb())
         await PortfolioRecordCreationStatesGroup.value.set()
 
-    async def create_portfolio_record__on_value_state(self, message: types.Message, state: FSMContext) -> None:
+    async def create_portfolio_record__on_value_state(
+        self,
+        message: types.Message,
+        state: FSMContext,
+        *args,
+        **kwargs
+    ) -> None:
         async with state.proxy() as data:
             try:
                 value: float = float(message.text)
