@@ -15,7 +15,7 @@ class PortfolioHandler(BaseHandler):
     portfolio_controller = PortfolioController()
 
     start_state_text = """
-        Введите тикер крипто актива (например: BTC):
+        Введите тикер крипто актива (например: bitcoin, polkadot):
     """
 
     is_current_data_state_text = """
@@ -23,7 +23,7 @@ class PortfolioHandler(BaseHandler):
     """
 
     wrong_ticker_text = """
-        Введенный крипто тикер не найден, либо вы ввели не правильный тикер, либо мы не отслеживаем этот актив
+        Введенный крипто тикер не найден в coingecko, либо вы ввели не правильный тикер
     """
 
     wrong_date_text = """
@@ -89,7 +89,8 @@ class PortfolioHandler(BaseHandler):
         **kwargs
     ) -> None:
         async with state.proxy() as data:
-            current_price = await get_current_price(data['crypto_ticker'])
+            current_price_data: dict = (await get_current_price([data['crypto_ticker']]))
+            current_price = current_price_data[data['crypto_ticker']]['usd']
 
             if not current_price:
                 await state.finish()

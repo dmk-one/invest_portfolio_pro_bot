@@ -68,7 +68,6 @@ class PortfolioController(BaseController):
         by_price: float,
         value: float
     ) -> PortfolioAction:
-
         if not action_date:
             action_date = datetime.datetime.now()
 
@@ -76,6 +75,9 @@ class PortfolioController(BaseController):
             tg_id=tg_id,
             crypto_ticker=crypto_ticker
         )
+
+        self.async_session.add(new_portfolio)
+        await self.async_session.flush()
 
         new_portfolio_action = PortfolioAction(
             portfolio_id=new_portfolio.id,
@@ -85,7 +87,7 @@ class PortfolioController(BaseController):
             value=value
         )
 
-        self.async_session.add_all([new_portfolio, new_portfolio_action])
+        self.async_session.add(new_portfolio_action)
 
         await self.async_session.commit()
 
