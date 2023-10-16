@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
@@ -8,6 +9,7 @@ from src.shared.features import set_role_validator, get_current_price
 from src.controllers.portfolio import PortfolioController
 from ..shared.constants import ActionType
 from ..shared.keyboards import get_cancel_kb, get_is_current_data_kb, get_action_type_kb
+from ..shared.schemas import TotalStats, TickerStat
 from ..shared.states import PortfolioRecordCreationStatesGroup
 
 
@@ -28,6 +30,49 @@ class AdditionalPortfolioHandler(BaseHandler, BasePortfolioHandler):
     def register_handlers(self, dispatcher: Dispatcher):
         dispatcher.register_message_handler(self.get_current_price, commands=['get_price'])
         dispatcher.register_message_handler(self.get_my_tickers, commands=['my_tickers'])
+
+
+class PortfolioStatHandler(BaseHandler, BasePortfolioHandler):
+    @staticmethod
+    def generate_total_stats_text(total_stats: TotalStats):
+        total_stats_text = (
+            "Общая статистика по портфелю:\n"
+            f"Общая сумма инвестирования: {total_stats.total_invested_usd_sum}$\n"
+            f"Общая сумма с текущими ценами: {total_stats.total_current_usd_sum}$\n"
+            f"Сумма PNL: {total_stats.pnl_value}$\n"
+            f"PNL: {total_stats.pnl_percent}%\n"
+            f"Количество криптовалют: {len(total_stats.tickers_stats)}\n"
+        )
+
+        return total_stats_text
+
+    @staticmethod
+    def generate_ticker_stats_text(ticker_stats: List[TickerStat]):
+        ticker_stats_text = ""
+
+        for ticker_stat in ticker_stats:
+            ticker_stats_text += (
+                f"Криптовалюта: {ticker_stat.crypto}\n"
+                f"Количество: {ticker_stat.total_value}\n"
+                f"Средняя цена: {ticker_stat.average_price}$\n"
+                f"Текущая цена: {ticker_stat.current_price}$\n"
+                f"Сумма инвестирования: {ticker_stat.total_invested_usd_sum}$\n"
+                f"Сумма с текущими ценами: {ticker_stat.total_current_usd_sum}$\n"
+                f"Сумма PNL: {ticker_stat.pnl_value}$\n"
+                f"PNL: {ticker_stat.pnl_percent}%\n\n"
+            )
+
+        return ticker_stats_text.strip()
+
+    async def get_my_portfolio_stats(self, message: types.Message, *args, **kwargs):
+        portfolio_stats = await self.portfolio_controller.get_total_portfolio_stats(message['from']['id'])
+        total_stats_text = self.generate_total_stats_text(portfolio_stats)
+        ticker_stats_text = self.generate_ticker_stats_text(portfolio_stats.tickers_stats)
+        await message.answer(text=total_stats_text)
+        await message.answer(text=ticker_stats_text)
+
+    def register_handlers(self, dispatcher: Dispatcher):
+        dispatcher.register_message_handler(self.get_my_portfolio_stats, commands=['stats'])
 
 
 class CreatePortfolioRecordHandler(BaseHandler, BasePortfolioHandler):
@@ -95,7 +140,7 @@ class CreatePortfolioRecordHandler(BaseHandler, BasePortfolioHandler):
     ) -> None:
         async with state.proxy() as data:
             current_price_data: dict = (await get_current_price([data['crypto_ticker']]))
-            current_price = current_price_data[data['crypto_ticker']]['usd']
+            current_price = current_price_data[data['crypto_ticker']]
 
             if not current_price:
                 await state.finish()

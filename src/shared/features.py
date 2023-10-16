@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Iterable
 from urllib.parse import quote
 
 import aiohttp
@@ -25,7 +25,7 @@ def set_role_validator(allowed_role_list: list):
 
 
 async def get_current_price(
-    crypto_symbol_list: List[str]
+    crypto_symbol_list: Iterable[str]
 ):
     url = 'https://api.coingecko.com/api/v3/simple/price?'
 
@@ -36,4 +36,9 @@ async def get_current_price(
         async with session.get(url=url) as response:
             prices = await response.json()
 
-            return prices
+            result = {}
+
+            for crypto_symbol, price_data in prices.items():
+                result[crypto_symbol] = price_data['usd']
+
+            return result

@@ -1,55 +1,92 @@
 import datetime
-from typing import List, Any, Sequence, Optional
+from typing import List, Sequence, Optional
 
-from sqlalchemy import Row, RowMapping
 from sqlalchemy.sql.expression import select
 
 from src.models import Portfolio, PortfolioAction
-from src.shared.schemas import DetailedPortfolio, TotalStats
+from src.shared.schemas import TickerStat, TotalStats
 from src.shared.features import get_current_price
 from .base import BaseController
 from ..shared.constants import ActionType
 
 
 class PortfolioController(BaseController):
-    async def _detailed_portfolio_generator(
+    async def get_total_portfolio_stats(
         self,
-        portfolio: Portfolio,
-        portfolio_action_list: List[PortfolioAction],
-    ) -> DetailedPortfolio:
-        current_price = await get_current_price()
+        tg_id: int
+    ) -> TotalStats:
+        stmt = select(
+            PortfolioAction,
+            Portfolio.crypto_ticker.label('ticker')
+        ).outerjoin(
+            Portfolio,
+            PortfolioAction.portfolio_id == Portfolio.id
+        ).where(Portfolio.tg_id == tg_id)
 
-        total_value: float = 0
+        all_portfolio_action_list = (await self.async_session.execute(stmt)).all()
+
+        all_tickers = set([record[1] for record in all_portfolio_action_list])
+
+        current_prices: dict = await get_current_price(all_tickers)
+
+        tickers_stats = []
+
+        for ticker in all_tickers:
+            current_price = current_prices[ticker]
+
+            action_list = [record[0] for record in all_portfolio_action_list if record[1] == ticker]
+
+            total_value: float = 0
+            total_invested_usd_sum: float = 0
+
+            for action in action_list:
+                if action.action_type.value == 0:
+                    total_value += action.value
+                    total_invested_usd_sum += action.value * action.by_price
+                else:
+                    total_value -= action.value
+                    total_invested_usd_sum -= action.value * action.by_price
+
+            average_price = total_invested_usd_sum / total_value
+
+            total_current_usd_sum = current_price * total_value
+
+            pnl_value = total_current_usd_sum - total_invested_usd_sum
+            pnl_percent = (pnl_value * 100) / total_invested_usd_sum
+
+            ticker_stat = TickerStat(
+                tg_id=tg_id,
+                crypto=ticker,
+                total_value=round(total_value, 2),
+                average_price=round(average_price, 2),
+                current_price=round(current_price, 2),
+                total_invested_usd_sum=round(total_invested_usd_sum, 2),
+                total_current_usd_sum=round(total_current_usd_sum, 2),
+                pnl_value=round(pnl_value, 2),
+                pnl_percent=round(pnl_percent, 2)
+            )
+
+            tickers_stats.append(ticker_stat)
+
         total_invested_usd_sum: float = 0
+        total_current_usd_sum: float = 0
 
-        for portfolio_action in portfolio_action_list:
-            if portfolio_action.action_type.value == 0:
-                total_value += portfolio_action.value
-                total_invested_usd_sum += portfolio_action.value * portfolio_action.by_price
-            else:
-                total_value -= portfolio_action.value
-                total_invested_usd_sum -= portfolio_action.value * portfolio_action.by_price
+        for detailed_portfolio in tickers_stats:
+            total_invested_usd_sum += detailed_portfolio.total_invested_usd_sum
+            total_current_usd_sum += detailed_portfolio.total_current_usd_sum
 
-        average_price = total_invested_usd_sum / total_value
-
-        total_current_crypto_value = current_price * total_value
-
-        pnl_value = total_current_crypto_value - total_invested_usd_sum
+        pnl_value = total_current_usd_sum - total_invested_usd_sum
         pnl_percent = (pnl_value * 100) / total_invested_usd_sum
 
-        detailed_portfolio = DetailedPortfolio(
-            tg_id=portfolio.tg_id,
-            crypto=portfolio.crypto,
-            total_value=total_value,
-            average_price=average_price,
-            current_price=current_price,
-            total_invested_usd_sum=total_invested_usd_sum,
-            total_current_crypto_value=total_current_crypto_value,
-            pnl_value=pnl_value,
-            pnl_percent=pnl_percent
+        total_stats = TotalStats(
+            total_invested_usd_sum=round(total_invested_usd_sum, 2),
+            total_current_usd_sum=round(total_current_usd_sum, 2),
+            pnl_value=round(pnl_value, 2),
+            pnl_percent=round(pnl_percent, 2),
+            tickers_stats=tickers_stats
         )
 
-        return detailed_portfolio
+        return total_stats
 
     async def get_user_portfolio_tickers(
         self,
@@ -71,16 +108,26 @@ class PortfolioController(BaseController):
         if not action_date:
             action_date = datetime.datetime.now()
 
-        new_portfolio = Portfolio(
-            tg_id=tg_id,
-            crypto_ticker=crypto_ticker
+        portfolio_stmt = select(
+            Portfolio
+        ).where(
+            Portfolio.tg_id == tg_id,
+            Portfolio.crypto_ticker == crypto_ticker
         )
 
-        self.async_session.add(new_portfolio)
-        await self.async_session.flush()
+        portfolio = (await self.async_session.execute(portfolio_stmt)).scalar()
+
+        if not portfolio:
+            portfolio = Portfolio(
+                tg_id=tg_id,
+                crypto_ticker=crypto_ticker
+            )
+
+            self.async_session.add(portfolio)
+            await self.async_session.flush()
 
         new_portfolio_action = PortfolioAction(
-            portfolio_id=new_portfolio.id,
+            portfolio_id=portfolio.id,
             action_date=action_date,
             action_type=action_type,
             by_price=by_price,
@@ -92,55 +139,3 @@ class PortfolioController(BaseController):
         await self.async_session.commit()
 
         return new_portfolio_action
-
-
-    # async def get_user_portfolio_tickers(
-    #     self,
-    #     portfolio_id_list: List[int] = None
-    # ) -> List[DetailedPortfolio]:
-    #     if portfolio_id_list is None:
-    #         portfolio_records = await self.get_all()
-    #     else:
-    #         portfolio_records = await self.get_all(
-    #             id__in=portfolio_id_list
-    #         )
-    #
-    #     detailed_portfolio_list = []
-    #
-    #     for portfolio_record in portfolio_records:
-    #         portfolio, portfolio_action_list = portfolio_record[0], portfolio_record[1:]
-    #
-    #         detailed_portfolio = await self._detailed_portfolio_generator(
-    #             portfolio=portfolio,
-    #             portfolio_action_list=portfolio_action_list
-    #         )
-    #
-    #         detailed_portfolio_list.append(detailed_portfolio)
-    #
-    #     return detailed_portfolio_list
-
-    async def get_total_stats(
-        self,
-        portfolio_id_list: List[int] = None
-    ) -> TotalStats:
-        detailed_portfolio_list = await self.get_detailed_portfolio(portfolio_id_list)
-
-        total_invested_usd_sum: float = 0
-        total_current_cryptos_value: float = 0
-
-        for detailed_portfolio in detailed_portfolio_list:
-            total_invested_usd_sum += detailed_portfolio.total_invested_usd_sum
-            total_current_cryptos_value += detailed_portfolio.total_invested_usd_sum
-
-        pnl_value = total_current_cryptos_value - total_invested_usd_sum
-        pnl_percent = (pnl_value * 100) / total_invested_usd_sum
-
-        total_stats = TotalStats(
-            total_invested_usd_sum=total_invested_usd_sum,
-            total_current_cryptos_value=total_current_cryptos_value,
-            pnl_value=pnl_value,
-            pnl_percent=pnl_percent,
-            detailed_portfolio_list=detailed_portfolio_list
-        )
-
-        return total_stats
