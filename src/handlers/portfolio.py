@@ -11,9 +11,26 @@ from ..shared.keyboards import get_cancel_kb, get_is_current_data_kb, get_action
 from ..shared.states import PortfolioRecordCreationStatesGroup
 
 
-class PortfolioHandler(BaseHandler):
+class BasePortfolioHandler:
     portfolio_controller = PortfolioController()
 
+
+class AdditionalPortfolioHandler(BaseHandler, BasePortfolioHandler):
+    @set_role_validator(allowed_role_list=['*'])
+    async def get_current_price(self, message: types.Message, *args, **kwargs):
+        await message.reply(text='OK')
+
+    @set_role_validator(allowed_role_list=['*'])
+    async def get_my_tickers(self, message: types.Message, *args, **kwargs):
+        await self.portfolio_controller.get_user_portfolio_tickers(message['from']['id'])
+        await message.reply(text='OK')
+
+    def register_handlers(self, dispatcher: Dispatcher):
+        dispatcher.register_message_handler(self.get_current_price, commands=['get_price'])
+        dispatcher.register_message_handler(self.get_my_tickers, commands=['my_tickers'])
+
+
+class CreatePortfolioRecordHandler(BaseHandler, BasePortfolioHandler):
     start_state_text = """
         Введите тикер крипто актива (например: bitcoin, polkadot):
     """
@@ -45,18 +62,6 @@ class PortfolioHandler(BaseHandler):
     enter_price_text = """
         Введите цену актива в момент покупки (целое число либо с пл.запятой):
     """
-
-    @set_role_validator(allowed_role_list=['*'])
-    async def get_current_price(self, message: types.Message, *args, **kwargs):
-        await message.reply(text='OK')
-
-    @set_role_validator(allowed_role_list=['*'])
-    async def get_my_tickers(self, message: types.Message, *args, **kwargs):
-        await self.portfolio_controller.get_user_portfolio_tickers(message['from']['id'])
-        await message.reply(text='OK')
-
-
-
 
     @set_role_validator(allowed_role_list=['*'])
     async def create_portfolio_record__start_state(
@@ -146,8 +151,8 @@ class PortfolioHandler(BaseHandler):
 
             data['by_price'] = by_price
 
-            await message.reply("Введите количество (целое число либо с пл.запятой)):", reply_markup=get_cancel_kb())
-            await PortfolioRecordCreationStatesGroup.value.set()
+            await message.reply("Тип операции:", reply_markup=get_action_type_kb())
+            await PortfolioRecordCreationStatesGroup.action_type.set()
 
     async def create_portfolio_record__on_action_type_state(
         self,
@@ -199,8 +204,6 @@ class PortfolioHandler(BaseHandler):
             await message.reply(text="Операция добавлена, данные портфеля обновлены!")
 
     def register_handlers(self, dispatcher: Dispatcher):
-        dispatcher.register_message_handler(self.get_current_price, commands=['get_price'])
-        dispatcher.register_message_handler(self.get_my_tickers, commands=['my_tickers'])
         dispatcher.register_message_handler(self.create_portfolio_record__start_state, commands=['create_record'])
         dispatcher.register_message_handler(
             self.create_portfolio_record__on_crypto_ticker_state,
@@ -226,4 +229,3 @@ class PortfolioHandler(BaseHandler):
             self.create_portfolio_record__on_value_state,
             state=PortfolioRecordCreationStatesGroup.value
         )
-

@@ -15,8 +15,7 @@ async def on_startup(_):
 
 
 def init_all_handlers():
-    from src.handlers.other import ExtraHandler
-    from src.handlers.portfolio import PortfolioHandler
+    from src.handlers import portfolio, other
 
 
 if __name__ == '__main__':

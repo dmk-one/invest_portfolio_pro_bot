@@ -19,7 +19,6 @@ class MetaHandler(ABCMeta):
 
         await state.finish()
         await message.reply('Вы прервали создание записи!', reply_markup=None)
-                            # reply_markup=get_kb())
 
     @classmethod
     def register_all_handlers(cls, dispatcher: Dispatcher):
