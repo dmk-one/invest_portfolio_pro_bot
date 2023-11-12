@@ -23,7 +23,9 @@ jobs:
             ssh dmk@10.8.0.2
             pwd
             ls
-            cd projects/invest_portfolio_pro_bot/
+            cd /home/dmk/projects/invest_portfolio_pro_bot
+            pwd
+            ls
             git pull
             export BOT_DB_PORT=${{secrets.BOT_DB_PORT}}
             docker compose -f docker/dev/docker-compose-dev.yml up --build -d
