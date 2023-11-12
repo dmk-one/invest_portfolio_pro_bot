@@ -21,6 +21,8 @@ jobs:
             cd .ssh
             ssh-add github
             ssh dmk@10.8.0.2
+            pwd
+            ls
             cd projects/invest_portfolio_pro_bot/
             git pull
             export BOT_DB_PORT=${{secrets.BOT_DB_PORT}}
