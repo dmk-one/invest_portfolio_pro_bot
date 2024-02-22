@@ -46,8 +46,12 @@ class PortfolioController(BaseController):
                 else:
                     total_value -= action.value
                     total_invested_usd_sum -= action.value * action.by_price
-
-            average_price = total_invested_usd_sum / total_value
+            print('total_invested_usd_sum', total_invested_usd_sum)
+            print('total_value', total_value)
+            try:
+                average_price = total_invested_usd_sum / total_value
+            except ZeroDivisionError:
+                average_price = 0
 
             total_current_usd_sum = current_price * total_value
 

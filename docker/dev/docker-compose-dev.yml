@@ -27,7 +27,7 @@ services:
     ports:
       - ${BOT_DB_PORT}:5432
     volumes:
-      - 'db_data:/var/lib/postgresql/data'
+      - 'bot_db_data:/var/lib/postgresql/data'
 
 networks:
   bot_network:
@@ -35,4 +35,4 @@ networks:
     driver: bridge
 
 volumes:
-  db_data:
+  bot_db_data:

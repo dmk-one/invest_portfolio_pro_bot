@@ -126,7 +126,7 @@ class CreatePortfolioRecordHandler(BaseHandler, BasePortfolioHandler):
         **kwargs
     ) -> None:
         async with state.proxy() as data:
-            data['crypto_ticker'] = message.text
+            data['crypto_ticker'] = message.text.lower()
 
         await message.reply(self.is_current_data_state_text, reply_markup=get_is_current_data_kb())
         await PortfolioRecordCreationStatesGroup.is_current_data_will_be_used.set()
@@ -140,6 +140,7 @@ class CreatePortfolioRecordHandler(BaseHandler, BasePortfolioHandler):
     ) -> None:
         async with state.proxy() as data:
             current_price_data: dict = (await get_current_price([data['crypto_ticker']]))
+            print('current_price_data', current_price_data)
             current_price = current_price_data[data['crypto_ticker']]
 
             if not current_price:
